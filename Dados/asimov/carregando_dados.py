@@ -10,8 +10,5 @@ print(df_frame.head(11))
 df_rename = df_frame.rename(columns={'COLUNM': 'COLUNA FINAL'}) #alterando o nome da coluna
 
 # Imprimindo o DataFrame com os novos nomes das colunas
-<<<<<<< HEAD
+
 print(df_rename)
-=======
-print(df_rename)
->>>>>>> a89fd2af1ecce4acfc5d54e25bc5fa56c3c5cb87
