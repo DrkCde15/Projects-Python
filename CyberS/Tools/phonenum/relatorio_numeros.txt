@@ -1,0 +1,9 @@
+[2025-06-25 10:31:43]
+Número: +5516997681259
+País / Região: São Paulo
+Operadora: Vivo
+Fuso Horário: America/Sao_Paulo
+Latitude: -23.5506507
+Longitude: -46.6333824
+Válido: Sim
+-----------------------------

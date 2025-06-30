@@ -1,0 +1,5 @@
+Alvo: youtube.com
+
+Porta aberta: 21 ftp
+Porta aberta: 80 http
+Porta aberta: 443 https
