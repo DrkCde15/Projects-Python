@@ -1,6 +1,4 @@
-import tkinter as tk
-from tkinter import scrolledtext
-import openai
+import google.generativeai as genai
 import pyttsx3
 import webbrowser
 import os
@@ -8,17 +6,22 @@ import json
 import datetime
 import re
 import speech_recognition as sr
+import traceback
 from dotenv import load_dotenv
 
 # ========== CONFIGURAÇÃO ==========
 load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
 idioma = 'pt'
 COMANDOS_PATH = "comandos.json"
 
 engine = pyttsx3.init()
 voices = engine.getProperty('voices')
 
+voz_ativa = True  # controla se a assistente fala
+
+# ========== FUNÇÕES DE VOZ ==========
 def configurar_voz():
     for voice in voices:
         if idioma == 'pt' and 'brazil' in voice.name.lower():
@@ -26,6 +29,8 @@ def configurar_voz():
             return
 
 def falar(texto):
+    if not voz_ativa:
+        return
     configurar_voz()
     engine.say(texto)
     engine.runAndWait()
@@ -43,19 +48,15 @@ def salvar_comandos_personalizados(comandos):
 
 comandos_personalizados = carregar_comandos_personalizados()
 
-# ========== GPT ==========
-def responder_com_gpt(pergunta):
+# ========== GEMINI ==========
+def responder_com_gemini(prompt):
     try:
-        resposta = openai.ChatCompletion.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "Você é um assistente simpático que ajuda com comandos e respostas úteis."},
-                {"role": "user", "content": pergunta}
-            ]
-        )
-        return resposta['choices'][0]['message']['content'].strip()
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        resposta = model.generate_content(prompt)
+        return resposta.text.strip()
     except Exception as e:
-        return "Erro ao acessar o ChatGPT."
+        print(f"Erro Gemini: {e}")
+        return "Erro ao acessar o Gemini."
 
 # ========== PADRÕES DE COMANDO ==========
 def abrir_site(site):
@@ -124,7 +125,7 @@ def executar_comando(comando):
     if resposta_regex:
         return resposta_regex
 
-    return responder_com_gpt(comando)
+    return responder_com_gemini(comando)
 
 # ========== MODO VOZ ==========
 def ouvir_comando():
@@ -165,73 +166,49 @@ def modo_continuo():
             resposta = executar_comando(comando)
             falar(resposta)
 
-# ========== MODO TEXTO TERMINAL ==========
+# ========== MODO TEXTO (JARVIS) ==========
 def modo_texto_terminal():
-    print("Modo texto ativado. Digite 'sair' para encerrar.")
-    while True:
-        comando = input("Você: ").strip().lower()
-        if comando in ['sair', 'exit']:
-            print("Até logo!")
-            break
-        resposta = executar_comando(comando)
-        print("Assistente:", resposta)
-        falar(resposta)
+    print("Modo texto ativado. Digite 'x' ou 'exit' para encerrar.\n")
 
-# ========== MODO TKINTER ==========
-class AssistenteApp:
-    def __init__(self, root):
-        self.root = root
-        root.title("Assistente Virtual")
-        root.geometry("600x500")
-        root.resizable(False, False)
+    mensagens = [
+        "Você é o JARVIS, um assistente profissional que vai diretamente ao ponto, muito inteligente, frio e sempre chama o usuário de Senhor."
+    ]
 
-        self.text_area = scrolledtext.ScrolledText(root, wrap=tk.WORD, font=("Arial", 12))
-        self.text_area.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
-        self.text_area.configure(state='disabled')
+    try:
+        while True:
+            pergunta = input("Usuário: ").strip()
+            if pergunta.lower() in ['x', 'exit']:
+                print("Até mais Senhor!")
+                break
 
-        self.entry = tk.Entry(root, font=("Arial", 12))
-        self.entry.pack(fill=tk.X, padx=10, pady=(0,10))
-        self.entry.bind("<Return>", self.enviar)
-
-        self.bot_falar = True
-        self.mostrar_mensagem("Assistente", "Olá! Digite seu comando abaixo.")
-
-    def mostrar_mensagem(self, remetente, mensagem):
-        self.text_area.configure(state='normal')
-        self.text_area.insert(tk.END, f"{remetente}: {mensagem}\n")
-        self.text_area.configure(state='disabled')
-        self.text_area.yview(tk.END)
-        if remetente == "Assistente" and self.bot_falar:
-            falar(mensagem)
-
-    def enviar(self, event):
-        comando = self.entry.get().strip()
-        if not comando:
-            return
-        self.mostrar_mensagem("Você", comando)
-        resposta = executar_comando(comando)
-        self.mostrar_mensagem("Assistente", resposta)
-        self.entry.delete(0, tk.END)
+            mensagens.append(f"Senhor: {pergunta}")
+            prompt = '\n'.join(mensagens)
+            resposta = responder_com_gemini(prompt)
+            mensagens.append(f"JARVIS: {resposta}")
+            print(f"\nJARVIS: {resposta}\n")
+    except KeyboardInterrupt:
+        print("\nInterrupção detectada. Até mais Senhor.")
+    except Exception:
+        print("Erro inesperado:")
+        traceback.print_exc()
 
 # ========== MENU PRINCIPAL ==========
 if __name__ == "__main__":
     print("\nEscolha a forma de interação:")
     print("1 - Modo por voz (fala um comando por vez)")
     print("2 - Modo contínuo (escuta sem parar)")
-    print("3 - Modo texto (terminal)")
-    print("4 - Modo gráfico (interface Tkinter)")
+    print("3 - Modo texto (JARVIS)")
 
-    escolha = input("Digite 1, 2, 3 ou 4: ").strip()
+    escolha = input("Digite 1, 2 ou 3: ").strip()
 
     if escolha == '1':
+        voz_ativa = True
         modo_voz_manual()
     elif escolha == '2':
+        voz_ativa = True
         modo_continuo()
     elif escolha == '3':
+        voz_ativa = False
         modo_texto_terminal()
-    elif escolha == '4':
-        root = tk.Tk()
-        app = AssistenteApp(root)
-        root.mainloop()
     else:
         print("Opção inválida.")
