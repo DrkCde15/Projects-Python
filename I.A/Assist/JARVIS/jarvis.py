@@ -47,7 +47,7 @@ comandos_personalizados = carregar_comandos_personalizados()
 def responder_com_gpt(pergunta):
     try:
         resposta = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "Você é um assistente simpático que ajuda com comandos e respostas úteis."},
                 {"role": "user", "content": pergunta}
