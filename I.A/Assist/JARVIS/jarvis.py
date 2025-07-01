@@ -1,3 +1,5 @@
+# J.A.R.V.I.S - Just A Rather Very Intelligent System
+
 import google.generativeai as genai
 import pyttsx3
 import webbrowser
@@ -64,10 +66,14 @@ def abrir_site(site):
         'youtube': 'https://youtube.com',
         'netflix': 'https://netflix.com',
         'google': 'https://google.com',
+        'microsoft teams': 'https://teams.microsoft.com'
     }
     if site in urls:
-        webbrowser.open(urls[site])
-        return f"Abrindo {site}."
+        try:
+            os.system(f"start {urls[site]}")  # método alternativo
+            return f"Abrindo {site}."
+        except Exception as e:
+            return f"Erro ao abrir {site}: {str(e)}"
     return "Site não reconhecido."
 
 def falar_hora():
@@ -79,7 +85,7 @@ def falar_data():
     return f"Hoje é {data}."
 
 padroes = [
-    (r'abrir\s+(youtube|netflix|google)', lambda m: abrir_site(m.group(1))),
+    (r'abrir\s+(youtube|netflix|google|microsoft teams)', lambda m: abrir_site(m.group(1))),
     (r'que horas|horas|hora atual', lambda m: falar_hora()),
     (r'data|que dia é hoje', lambda m: falar_data())
 ]
@@ -150,7 +156,7 @@ def modo_voz_manual():
         comando = ouvir_comando()
         if comando:
             if comando in ['sair', 'exit']:
-                falar("Encerrando.")
+                falar("Até mais Senhor.")
                 break
             resposta = executar_comando(comando)
             falar(resposta)
@@ -161,7 +167,7 @@ def modo_continuo():
         comando = ouvir_comando()
         if comando:
             if 'sair do modo contínuo' in comando:
-                falar("Saindo do modo contínuo.")
+                falar("Saindo do modo contínuo, Até mais Senhor.")
                 break
             resposta = executar_comando(comando)
             falar(resposta)

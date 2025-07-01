@@ -3,6 +3,7 @@
     "abrir netflix": "https://netflix.com",
     "abrir youtube": "https://youtube.com",
     "abrir google": "https://google.com",
+    "abrir microsoft teams": "https://teams.microsoft.com",
     "que horas": "falar_hora()",
     "que dia é hoje": "falar_data()",
     "abrir vscode": "code ."
