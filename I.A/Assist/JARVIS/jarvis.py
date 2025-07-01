@@ -203,7 +203,7 @@ def ouvir_comando():
         return ""
 
 def modo_voz_manual():
-    falar("Olá Senhor, Sou seu assistente de voz JARVIS.")
+    falar("Olá Senhor, Sou seu assistente de voz JARVIS, por favor me diga um comando.")
     while True:
         comando = ouvir_comando()
         if comando:
