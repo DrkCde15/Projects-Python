@@ -3,8 +3,11 @@
     "abrir netflix": "https://netflix.com",
     "abrir youtube": "https://youtube.com",
     "abrir google": "https://google.com",
+    "abrir brave": "start brave",
     "abrir microsoft teams": "https://teams.microsoft.com",
+    "abrir instagram": "https://www.instagram.com/jc_v05/",
+    "abrir whatsapp": "https://web.whatsapp.com/",
+    "abrir vscode": "code .",
     "que horas": "falar_hora()",
-    "que dia é hoje": "falar_data()",
-    "abrir vscode": "code ."
+    "que dia é hoje": "falar_data()" 
 }

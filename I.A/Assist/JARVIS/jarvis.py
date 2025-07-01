@@ -1,4 +1,4 @@
-# J.A.R.V.I.S - Just A Rather Very Intelligent System - Assistente inteligente para o dia-a-dia
+# J.A.R.V.I.S - Just A Rather Very Intelligent System
 import google.generativeai as genai
 import pyttsx3
 import webbrowser
@@ -10,19 +10,19 @@ import speech_recognition as sr
 import traceback
 from dotenv import load_dotenv
 
-# ========== CONFIGURAÇÃO ==========
+# ========== CONFIG ==========
 load_dotenv()
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 idioma = 'pt'
+voz_ativa = True
 COMANDOS_PATH = "comandos.json"
+APLICATIVOS_PATH = "aplicativos.json"
 
 engine = pyttsx3.init()
 voices = engine.getProperty('voices')
 
-voz_ativa = True  # controla se a assistente fala
-
-# ========== FUNÇÕES DE VOZ ==========
+# ========== VOZ ==========
 def configurar_voz():
     for voice in voices:
         if idioma == 'pt' and 'brazil' in voice.name.lower():
@@ -36,18 +36,19 @@ def falar(texto):
     engine.say(texto)
     engine.runAndWait()
 
-# ========== COMANDOS PERSONALIZADOS ==========
-def carregar_comandos_personalizados():
-    if os.path.exists(COMANDOS_PATH):
-        with open(COMANDOS_PATH, "r", encoding="utf-8") as f:
+# ========== JSON ==========
+def carregar_json(path):
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
     return {}
 
-def salvar_comandos_personalizados(comandos):
-    with open(COMANDOS_PATH, "w", encoding="utf-8") as f:
-        json.dump(comandos, f, indent=4)
+def salvar_json(path, dados):
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(dados, f, indent=4)
 
-comandos_personalizados = carregar_comandos_personalizados()
+comandos_personalizados = carregar_json(COMANDOS_PATH)
+aplicativos = carregar_json(APLICATIVOS_PATH)
 
 # ========== GEMINI ==========
 def responder_com_gemini(prompt):
@@ -59,34 +60,54 @@ def responder_com_gemini(prompt):
         print(f"Erro Gemini: {e}")
         return "Erro ao acessar o Gemini."
 
-# ========== PADRÕES DE COMANDO ==========
+# ========== UTILIDADES ==========
 def abrir_site(site):
     urls = {
         'youtube': 'https://youtube.com',
         'netflix': 'https://netflix.com',
         'google': 'https://google.com',
-        'microsoft teams': 'https://teams.microsoft.com'
+        'microsoft teams': 'https://teams.microsoft.com',
+        'github': 'https://github.com',
+        'instagram': 'https://www.instagram.com/jc_v05/',
+        'whatsapp': 'https://web.whatsapp.com/'
     }
     if site in urls:
         try:
-            os.system(f"start {urls[site]}")  # método alternativo
+            webbrowser.open(urls[site])
             return f"Abrindo {site}."
         except Exception as e:
             return f"Erro ao abrir {site}: {str(e)}"
     return "Site não reconhecido."
 
+def abrir_aplicativo(nome):
+    nome = nome.lower().strip()
+    if nome in aplicativos:
+        try:
+            os.system(aplicativos[nome])
+            return f"Abrindo {nome}..."
+        except Exception as e:
+            return f"Erro ao abrir {nome}: {str(e)}"
+    return f"Aplicativo '{nome}' não está mapeado."
+
 def falar_hora():
-    hora = datetime.datetime.now().strftime('%H:%M')
-    return f"Agora são {hora}."
+    return f"Agora são {datetime.datetime.now().strftime('%H:%M')}."
 
 def falar_data():
-    data = datetime.datetime.now().strftime('%d/%m/%Y')
-    return f"Hoje é {data}."
+    return f"Hoje é {datetime.datetime.now().strftime('%d/%m/%Y')}."
 
+def listar_aplicativos():
+    if not aplicativos:
+        return "Nenhum aplicativo foi mapeado ainda."
+    nomes = sorted(aplicativos.keys())
+    return "Aplicativos disponíveis: " + ", ".join(nomes)
+
+# ========== EXECUÇÃO DOS APPS/SITES ==========
 padroes = [
-    (r'abrir\s+(youtube|netflix|google|microsoft teams)', lambda m: abrir_site(m.group(1))),
-    (r'que horas|horas|hora atual', lambda m: falar_hora()),
-    (r'data|que dia é hoje', lambda m: falar_data())
+    (r'\b(abrir|abre|executar|iniciar)\s+(youtube|netflix|google|microsoft teams|github|instagram|whatsapp)', lambda m: abrir_site(m.group(2))),
+    (r'\b(abrir|abre|executar|iniciar)\s+([a-zA-Z0-9_ ]+)', lambda m: abrir_aplicativo(m.group(2).split()[0])),
+    (r'\b(que horas|horas|hora atual|me diga as horas)\b', lambda m: falar_hora()),
+    (r'\b(data|que dia é hoje|me diga a data|qual a data)\b', lambda m: falar_data()),
+    (r'\b(listar|mostrar|quais)\s+(aplicativos|apps)\b', lambda m: listar_aplicativos())
 ]
 
 def processar_regex(comando):
@@ -96,7 +117,25 @@ def processar_regex(comando):
             return acao(match)
     return None
 
-# ========== EXECUTA COMANDO ==========
+def abrir_aplicativo(nome):
+    nome = nome.lower().strip()
+    # Garantindo que pegamos só o primeiro termo, por segurança (ex: 'brave browser' vira 'brave')
+    nome = nome.split()[0]
+    if nome in aplicativos:
+        try:
+            os.system(aplicativos[nome])
+            return f"Abrindo {nome}..."
+        except Exception as e:
+            return f"Erro ao abrir {nome}: {str(e)}"
+    return f"Aplicativo '{nome}' não está mapeado."
+
+def executar_comando(comando):
+    for padrao, funcao in padroes:
+        if re.search(padrao, comando):
+            return funcao(comando)
+    return responder_com_gemini(comando)
+
+# ========== EXECUÇÃO ==========
 def executar_comando(comando):
     comando = comando.lower().strip()
 
@@ -113,18 +152,25 @@ def executar_comando(comando):
             partes = comando.replace("cadastrar comando", "").strip().split(" para ")
             nome, acao = partes[0].strip(), partes[1].strip()
             comandos_personalizados[nome] = acao
-            salvar_comandos_personalizados(comandos_personalizados)
+            salvar_json(COMANDOS_PATH, comandos_personalizados)
             return f"Comando '{nome}' cadastrado com sucesso."
         except:
             return "Formato inválido. Use: cadastrar comando NOME para LINK ou COMANDO."
 
     if comando in comandos_personalizados:
         destino = comandos_personalizados[comando]
-        if destino.startswith("http"):
-            webbrowser.open(destino)
-        else:
-            os.system(destino)
-        return f"Executando {comando}."
+        try:
+            if destino.startswith("http"):
+                webbrowser.open(destino)
+            elif destino.endswith("()"):
+                return eval(destino)
+            elif destino.startswith("abrir_aplicativo"):
+                return eval(destino)
+            else:
+                os.system(destino)
+            return f"Executando {comando}."
+        except Exception as e:
+            return f"Erro ao executar comando: {str(e)}"
 
     resposta_regex = processar_regex(comando)
     if resposta_regex:
@@ -132,7 +178,7 @@ def executar_comando(comando):
 
     return responder_com_gemini(comando)
 
-# ========== MODO VOZ ==========
+# ========== COMANDO POR VOZ ==========
 def ouvir_comando():
     r = sr.Recognizer()
     with sr.Microphone() as source:
@@ -171,7 +217,7 @@ def modo_continuo():
             resposta = executar_comando(comando)
             falar(resposta)
 
-# ========== MODO TEXTO (JARVIS) ==========
+# ========== COMANDO POR TEXTO ==========
 def modo_texto_terminal():
     print("Modo texto ativado. Digite 'x' ou 'exit' para encerrar.\n")
 
@@ -197,7 +243,7 @@ def modo_texto_terminal():
         print("Erro inesperado:")
         traceback.print_exc()
 
-# ========== MENU PRINCIPAL ==========
+# ========== MENU ==========
 if __name__ == "__main__":
     print("\nEscolha a forma de interação:")
     print("1 - Modo por voz (fala um comando por vez)")
