@@ -203,7 +203,7 @@ def ouvir_comando():
         return ""
 
 def modo_voz_manual():
-    falar("Modo voz ativado. Diga seu comando.")
+    falar("Olá Senhor, Sou seu assistente de voz JARVIS.")
     while True:
         comando = ouvir_comando()
         if comando:
@@ -226,7 +226,7 @@ def modo_continuo():
 
 # ========== COMANDO POR TEXTO ==========
 def modo_texto_terminal():
-    print("Modo texto ativado. Digite 'x' ou 'exit' para encerrar.\n")
+    print("Ola Senhor, Sou seu assistente JARVIS. Digite 'x' ou 'exit' para encerrar.\n")
 
     mensagens = [
         "Você é o JARVIS, um assistente profissional que vai diretamente ao ponto, muito inteligente, frio e sempre chama o usuário de Senhor."
