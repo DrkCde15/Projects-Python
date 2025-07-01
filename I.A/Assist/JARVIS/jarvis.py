@@ -16,7 +16,7 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 idioma = 'pt'
 voz_ativa = True
-COMANDOS_PATH = "comandos.json"
+COMANDOS_PATH = "sites.json"
 APLICATIVOS_PATH = "aplicativos.json"
 
 engine = pyttsx3.init()
@@ -61,16 +61,18 @@ def responder_com_gemini(prompt):
         return "Erro ao acessar o Gemini."
 
 # ========== UTILIDADES ==========
+# Define os sites fora das funções
+urls = {
+    'youtube': 'https://youtube.com',
+    'netflix': 'https://netflix.com',
+    'google': 'https://google.com',
+    'microsoft teams': 'https://teams.microsoft.com',
+    'github': 'https://github.com',
+    'instagram': 'https://www.instagram.com/jc_v05/',
+    'whatsapp': 'https://web.whatsapp.com/'
+}
+
 def abrir_site(site):
-    urls = {
-        'youtube': 'https://youtube.com',
-        'netflix': 'https://netflix.com',
-        'google': 'https://google.com',
-        'microsoft teams': 'https://teams.microsoft.com',
-        'github': 'https://github.com',
-        'instagram': 'https://www.instagram.com/jc_v05/',
-        'whatsapp': 'https://web.whatsapp.com/'
-    }
     if site in urls:
         try:
             webbrowser.open(urls[site])
@@ -79,6 +81,11 @@ def abrir_site(site):
             return f"Erro ao abrir {site}: {str(e)}"
     return "Site não reconhecido."
 
+def listar_sites():
+    if not urls:
+        return "Nenhum site foi mapeado ainda."
+    nomes = sorted(urls.keys())
+    return "Sites disponíveis: " + ", ".join(nomes)
 def abrir_aplicativo(nome):
     nome = nome.lower().strip()
     if nome in aplicativos:
@@ -107,7 +114,8 @@ padroes = [
     (r'\b(abrir|abre|executar|iniciar)\s+([a-zA-Z0-9_ ]+)', lambda m: abrir_aplicativo(m.group(2).split()[0])),
     (r'\b(que horas|horas|hora atual|me diga as horas)\b', lambda m: falar_hora()),
     (r'\b(data|que dia é hoje|me diga a data|qual a data)\b', lambda m: falar_data()),
-    (r'\b(listar|mostrar|quais)\s+(aplicativos|apps)\b', lambda m: listar_aplicativos())
+    (r'\b(listar|mostrar|quais)\s+(aplicativos|apps)\b', lambda m: listar_aplicativos()),
+    (r'\b(listar|mostrar|quais)\s+(site|sites)\b', lambda m: listar_sites())
 ]
 
 def processar_regex(comando):
@@ -119,7 +127,6 @@ def processar_regex(comando):
 
 def abrir_aplicativo(nome):
     nome = nome.lower().strip()
-    # Garantindo que pegamos só o primeiro termo, por segurança (ex: 'brave browser' vira 'brave')
     nome = nome.split()[0]
     if nome in aplicativos:
         try:
