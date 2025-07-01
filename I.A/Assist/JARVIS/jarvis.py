@@ -36,7 +36,7 @@ def falar(texto):
     engine.say(texto)
     engine.runAndWait()
 
-# ========== JSON ==========
+# ========== IMPORTANDO JSON ==========
 def carregar_json(path):
     if os.path.exists(path):
         with open(path, "r", encoding="utf-8") as f:
@@ -60,7 +60,7 @@ def responder_com_gemini(prompt):
         print(f"Erro Gemini: {e}")
         return "Erro ao acessar o Gemini."
 
-# ========== UTILIDADES ==========
+# ========== COMANDOS ==========
 # Define os sites fora das funções
 urls = {
     'youtube': 'https://youtube.com',
