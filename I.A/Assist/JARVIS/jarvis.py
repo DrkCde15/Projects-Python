@@ -1,5 +1,4 @@
-# J.A.R.V.I.S - Just A Rather Very Intelligent System
-
+# J.A.R.V.I.S - Just A Rather Very Intelligent System - Assistente inteligente para o dia-a-dia
 import google.generativeai as genai
 import pyttsx3
 import webbrowser
