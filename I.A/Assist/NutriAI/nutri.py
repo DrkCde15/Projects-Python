@@ -16,7 +16,7 @@ os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
 
 # ======== INICIALIZAÇÃO =========
 try:
-    chat = ChatGoogleGenerativeAI(model='gemini-1.5-flash', temperature=0.7) #gemini-1.5-flash com temperatura 0.7 para uma resposta mais clara e objetiva
+    chat = ChatGoogleGenerativeAI(model='gemini-1.5-flash', temperature=0.7) #gemini-1.5-flash com temperatura 0.7 para uma resposta mais objetiva e rapida
     print("NutriAI inicializada com sucesso!")
 except Exception:
     print("Erro ao inicializar a IA nutricional:")
