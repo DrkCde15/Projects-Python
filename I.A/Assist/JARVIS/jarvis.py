@@ -8,9 +8,10 @@ import datetime
 import re
 import speech_recognition as sr
 import traceback
+import urllib.parse
 from dotenv import load_dotenv
 
-# ========== CONFIG ==========
+# ========== API ==========
 load_dotenv()
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
@@ -61,7 +62,6 @@ def responder_com_gemini(prompt):
         return "Erro ao acessar o Gemini."
 
 # ========== COMANDOS ==========
-# Define os sites fora das funções
 urls = {
     'youtube': 'https://youtube.com',
     'netflix': 'https://netflix.com',
@@ -86,8 +86,10 @@ def listar_sites():
         return "Nenhum site foi mapeado ainda."
     nomes = sorted(urls.keys())
     return "Sites disponíveis: " + ", ".join(nomes)
+
 def abrir_aplicativo(nome):
     nome = nome.lower().strip()
+    nome = nome.split()[0]
     if nome in aplicativos:
         try:
             os.system(aplicativos[nome])
@@ -108,6 +110,13 @@ def listar_aplicativos():
     nomes = sorted(aplicativos.keys())
     return "Aplicativos disponíveis: " + ", ".join(nomes)
 
+# Função para pesquisar no Google
+def pesquisar_google(termo):
+    termo_codificado = urllib.parse.quote_plus(termo)
+    url = f"https://www.google.com/search?q={termo_codificado}"
+    webbrowser.open(url)
+    return f"Pesquisando '{termo}"
+
 # ========== EXECUÇÃO DOS APPS/SITES ==========
 padroes = [
     (r'\b(abrir|abre|executar|iniciar)\s+(youtube|netflix|google|microsoft teams|github|instagram|whatsapp)', lambda m: abrir_site(m.group(2))),
@@ -115,7 +124,8 @@ padroes = [
     (r'\b(que horas|horas|hora atual|me diga as horas)\b', lambda m: falar_hora()),
     (r'\b(data|que dia é hoje|me diga a data|qual a data)\b', lambda m: falar_data()),
     (r'\b(listar|mostrar|quais)\s+(aplicativos|apps)\b', lambda m: listar_aplicativos()),
-    (r'\b(listar|mostrar|quais)\s+(site|sites)\b', lambda m: listar_sites())
+    (r'\b(listar|mostrar|quais)\s+(site|sites)\b', lambda m: listar_sites()),
+    (r'pesquisar por(.+)', lambda m: pesquisar_google(m.group(1).strip()))
 ]
 
 def processar_regex(comando):
@@ -124,23 +134,6 @@ def processar_regex(comando):
         if match:
             return acao(match)
     return None
-
-def abrir_aplicativo(nome):
-    nome = nome.lower().strip()
-    nome = nome.split()[0]
-    if nome in aplicativos:
-        try:
-            os.system(aplicativos[nome])
-            return f"Abrindo {nome}..."
-        except Exception as e:
-            return f"Erro ao abrir {nome}: {str(e)}"
-    return f"Aplicativo '{nome}' não está mapeado."
-
-def executar_comando(comando):
-    for padrao, funcao in padroes:
-        if re.search(padrao, comando):
-            return funcao(comando)
-    return responder_com_gemini(comando)
 
 # ========== EXECUÇÃO ==========
 def executar_comando(comando):
