@@ -116,7 +116,7 @@ def pesquisar_google(termo):
     termo_codificado = urllib.parse.quote_plus(termo)
     url = f"https://www.google.com/search?q={termo_codificado}"
     webbrowser.open(url)
-    return f"Pesquisando '{termo}"
+    return f"Pesquisando '{termo}'"
 
 # ========== EXECUÇÃO DOS APPS/SITES ==========
 padroes = [
@@ -207,17 +207,6 @@ def modo_voz_manual():
             resposta = executar_comando(comando)
             falar(resposta)
 
-def modo_continuo():
-    falar("Modo contínuo ativado. Fale comigo.")
-    while True:
-        comando = ouvir_comando()
-        if comando:
-            if 'sair do modo contínuo' in comando:
-                falar("Saindo do modo contínuo, Até mais Senhor.")
-                break
-            resposta = executar_comando(comando)
-            falar(resposta)
-
 # ========== COMANDO POR TEXTO ==========
 def modo_texto_terminal():
     print("Ola Senhor, Sou seu assistente JARVIS. Digite 'x' ou 'exit' para encerrar.\n")
@@ -248,18 +237,14 @@ def modo_texto_terminal():
 if __name__ == "__main__":
     print("\nEscolha a forma de interação:")
     print("1 - Modo por voz (fala um comando por vez)")
-    print("2 - Modo contínuo (escuta sem parar)")
-    print("3 - Modo texto (JARVIS)")
+    print("2 - Modo texto (JARVIS)")
 
-    escolha = input("Digite 1, 2 ou 3: ").strip()
+    escolha = input("Digite 1 ou 2: ").strip()
 
     if escolha == '1':
         voz_ativa = True
         modo_voz_manual()
     elif escolha == '2':
-        voz_ativa = True
-        modo_continuo()
-    elif escolha == '3':
         voz_ativa = False
         modo_texto_terminal()
     else:
