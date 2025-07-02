@@ -67,9 +67,10 @@ urls = {
     'netflix': 'https://netflix.com',
     'google': 'https://google.com',
     'microsoft teams': 'https://teams.microsoft.com',
-    'github': 'https://github.com',
+    'github': 'https://github.com/DrkCde15',
     'instagram': 'https://www.instagram.com/jc_v05/',
-    'whatsapp': 'https://web.whatsapp.com/'
+    'whatsapp': 'https://web.whatsapp.com/',
+    'tik tok': 'https://www.tiktok.com/@bx_329'
 }
 
 def abrir_site(site):
@@ -119,8 +120,8 @@ def pesquisar_google(termo):
 
 # ========== EXECUÇÃO DOS APPS/SITES ==========
 padroes = [
-    (r'\b(abrir|abre|executar|iniciar)\s+(youtube|netflix|google|microsoft teams|github|instagram|whatsapp)', lambda m: abrir_site(m.group(2))),
-    (r'\b(abrir|abre|executar|iniciar)\s+([a-zA-Z0-9_ ]+)', lambda m: abrir_aplicativo(m.group(2).split()[0])),
+    (r'\b(iniciar)\s+(youtube|netflix|google|microsoft teams|github|instagram|whatsapp|tik tok)', lambda m: abrir_site(m.group(2))),
+    (r'\b(abrir|abre|executar)\s+([a-zA-Z0-9_ ]+)', lambda m: abrir_aplicativo(m.group(2).split()[0])),
     (r'\b(que horas|horas|hora atual|me diga as horas)\b', lambda m: falar_hora()),
     (r'\b(data|que dia é hoje|me diga a data|qual a data)\b', lambda m: falar_data()),
     (r'\b(listar|mostrar|quais)\s+(aplicativos|apps)\b', lambda m: listar_aplicativos()),
