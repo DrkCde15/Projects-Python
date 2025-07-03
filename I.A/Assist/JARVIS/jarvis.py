@@ -64,9 +64,8 @@ def responder_com_gemini(prompt):
 # ========== COMANDOS ==========
 urls = {
     'youtube': 'https://youtube.com',
-    'netflix': 'https://netflix.com',
-    'google': 'https://google.com',
-    'microsoft teams': 'https://teams.microsoft.com',
+    'netflix': 'https://www.netflix.com/browse',
+    'microsoft teams': 'https://teams.microsoft.com/v2/',
     'github': 'https://github.com/DrkCde15',
     'instagram': 'https://www.instagram.com/jc_v05/',
     'whatsapp': 'https://web.whatsapp.com/',
