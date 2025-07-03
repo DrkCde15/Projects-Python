@@ -1,4 +1,3 @@
-# J.A.R.V.I.S - Just A Rather Very Intelligent System
 import google.generativeai as genai
 import pyttsx3
 import webbrowser
@@ -9,11 +8,13 @@ import re
 import speech_recognition as sr
 import traceback
 import urllib.parse
+import getpass
 from dotenv import load_dotenv
 
-# ========== API ==========
+# ======== CONFIGURAÇÃO ========
 load_dotenv()
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+ADMIN_KEY = os.getenv("ADMIN_KEY")
 
 idioma = 'pt'
 voz_ativa = True
@@ -23,7 +24,7 @@ APLICATIVOS_PATH = "aplicativos.json"
 engine = pyttsx3.init()
 voices = engine.getProperty('voices')
 
-# ========== VOZ ==========
+# ======== VOZ ========
 def configurar_voz():
     for voice in voices:
         if idioma == 'pt' and 'brazil' in voice.name.lower():
@@ -37,7 +38,7 @@ def falar(texto):
     engine.say(texto)
     engine.runAndWait()
 
-# ========== IMPORTANDO JSON ==========
+# ======== JSON ========
 def carregar_json(path):
     if os.path.exists(path):
         with open(path, "r", encoding="utf-8") as f:
@@ -51,7 +52,7 @@ def salvar_json(path, dados):
 comandos_personalizados = carregar_json(COMANDOS_PATH)
 aplicativos = carregar_json(APLICATIVOS_PATH)
 
-# ========== GEMINI ==========
+# ======== GEMINI ========
 def responder_com_gemini(prompt):
     try:
         model = genai.GenerativeModel('gemini-2.5-flash')
@@ -61,7 +62,7 @@ def responder_com_gemini(prompt):
         print(f"Erro Gemini: {e}")
         return "Erro ao acessar o Gemini."
 
-# ========== COMANDOS ==========
+# ======== SITES/APPS/UTIL ========
 urls = {
     'youtube': 'https://youtube.com',
     'netflix': 'https://www.netflix.com/browse',
@@ -82,14 +83,10 @@ def abrir_site(site):
     return "Site não reconhecido."
 
 def listar_sites():
-    if not urls:
-        return "Nenhum site foi mapeado ainda."
-    nomes = sorted(urls.keys())
-    return "Sites disponíveis: " + ", ".join(nomes)
+    return "Sites disponíveis: " + ", ".join(sorted(urls.keys())) if urls else "Nenhum site mapeado."
 
 def abrir_aplicativo(nome):
-    nome = nome.lower().strip()
-    nome = nome.split()[0]
+    nome = nome.lower().strip().split()[0]
     if nome in aplicativos:
         try:
             os.system(aplicativos[nome])
@@ -105,22 +102,17 @@ def falar_data():
     return f"Hoje é {datetime.datetime.now().strftime('%d/%m/%Y')}."
 
 def listar_aplicativos():
-    if not aplicativos:
-        return "Nenhum aplicativo foi mapeado ainda."
-    nomes = sorted(aplicativos.keys())
-    return "Aplicativos disponíveis: " + ", ".join(nomes)
+    return "Aplicativos disponíveis: " + ", ".join(sorted(aplicativos.keys())) if aplicativos else "Nenhum aplicativo mapeado."
 
-# Função para pesquisar no Google
 def pesquisar_google(termo):
-    termo_codificado = urllib.parse.quote_plus(termo)
-    url = f"https://www.google.com/search?q={termo_codificado}"
+    url = f"https://www.google.com/search?q={urllib.parse.quote_plus(termo)}"
     webbrowser.open(url)
-    return f"Pesquisando '{termo}'"
+    return f"Pesquisando '{termo}' no Google."
 
-# ========== EXECUÇÃO DOS APPS/SITES ==========
+# ======== PADRÕES REGEX ========
 padroes = [
-    (r'\b(iniciar|abrir)\s+(youtube|netflix|google|microsoft teams|github|instagram|whatsapp|tik tok)', lambda m: abrir_site(m.group(2))),
-    (r'\b(executar)\s+([a-zA-Z0-9_ ]+)', lambda m: abrir_aplicativo(m.group(2).split()[0])),
+    (r'\b(iniciar|abrir|executar)\s+(youtube|netflix|microsoft teams|github|instagram|whatsapp|tik tok)', lambda m: abrir_site(m.group(2))),
+    (r'\b(executar|abrir|iniciar)\s+([a-zA-Z0-9_ ]+)', lambda m: abrir_aplicativo(m.group(2))),
     (r'\b(que horas|horas|hora atual|me diga as horas)\b', lambda m: falar_hora()),
     (r'\b(data|que dia é hoje|me diga a data|qual a data)\b', lambda m: falar_data()),
     (r'\b(listar)\s+(aplicativos|apps)\b', lambda m: listar_aplicativos()),
@@ -135,7 +127,7 @@ def processar_regex(comando):
             return acao(match)
     return None
 
-# ========== EXECUÇÃO ==========
+# ======== EXECUÇÃO PRINCIPAL ========
 def executar_comando(comando):
     comando = comando.lower().strip()
 
@@ -162,9 +154,7 @@ def executar_comando(comando):
         try:
             if destino.startswith("http"):
                 webbrowser.open(destino)
-            elif destino.endswith("()"):
-                return eval(destino)
-            elif destino.startswith("abrir_aplicativo"):
+            elif destino.endswith("()") or destino.startswith("abrir_aplicativo"):
                 return eval(destino)
             else:
                 os.system(destino)
@@ -172,13 +162,28 @@ def executar_comando(comando):
         except Exception as e:
             return f"Erro ao executar comando: {str(e)}"
 
+    # ===== MODO ADMINISTRADOR =====
+    if comando == "modo administrador":
+        falar("Modo administrador solicitado. Por favor, digite a chave secreta no terminal.")
+        chave = getpass.getpass("Digite a chave secreta: ").strip()
+        if not chave:
+            return "Chave não fornecida. Acesso negado."
+        try:
+            caminho_admin = os.path.abspath("admin_actions.py")
+            os.system(f'start python "{caminho_admin}" {chave}')
+            return "Verificando chave e ativando modo administrador..."
+        except Exception as e:
+            return f"Erro ao tentar ativar modo administrador: {e}"
+
+    # ===== REGEX PADRÕES =====
     resposta_regex = processar_regex(comando)
     if resposta_regex:
         return resposta_regex
 
+    # ===== FALLBACK: Gemini =====
     return responder_com_gemini(comando)
 
-# ========== COMANDO POR VOZ ==========
+# ======== MODO VOZ ========
 def ouvir_comando():
     r = sr.Recognizer()
     with sr.Microphone() as source:
@@ -206,10 +211,9 @@ def modo_voz_manual():
             resposta = executar_comando(comando)
             falar(resposta)
 
-# ========== COMANDO POR TEXTO ==========
+# ======== MODO TEXTO ========
 def modo_texto_terminal():
     print("Ola Senhor, Sou seu assistente JARVIS. Digite 'x' ou 'exit' para encerrar.\n")
-
     mensagens = [
         "Você é o JARVIS, um assistente profissional que vai diretamente ao ponto, muito inteligente, frio e sempre chama o usuário de Senhor."
     ]
@@ -223,7 +227,7 @@ def modo_texto_terminal():
 
             mensagens.append(f"Senhor: {pergunta}")
             prompt = '\n'.join(mensagens)
-            resposta = responder_com_gemini(prompt)
+            resposta = executar_comando(pergunta)
             mensagens.append(f"JARVIS: {resposta}")
             print(f"\nJARVIS: {resposta}\n")
     except KeyboardInterrupt:
@@ -232,7 +236,7 @@ def modo_texto_terminal():
         print("Erro inesperado:")
         traceback.print_exc()
 
-# ========== MENU ==========
+# ======== MENU INICIAL ========
 if __name__ == "__main__":
     print("\nEscolha a forma de interação:")
     print("1 - Modo por voz (fala um comando por vez)")
