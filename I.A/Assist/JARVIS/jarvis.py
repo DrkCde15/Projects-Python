@@ -120,12 +120,12 @@ def pesquisar_google(termo):
 
 # ========== EXECUÇÃO DOS APPS/SITES ==========
 padroes = [
-    (r'\b(iniciar)\s+(youtube|netflix|google|microsoft teams|github|instagram|whatsapp|tik tok)', lambda m: abrir_site(m.group(2))),
-    (r'\b(abrir|abre|executar)\s+([a-zA-Z0-9_ ]+)', lambda m: abrir_aplicativo(m.group(2).split()[0])),
+    (r'\b(iniciar|abrir)\s+(youtube|netflix|google|microsoft teams|github|instagram|whatsapp|tik tok)', lambda m: abrir_site(m.group(2))),
+    (r'\b(executar)\s+([a-zA-Z0-9_ ]+)', lambda m: abrir_aplicativo(m.group(2).split()[0])),
     (r'\b(que horas|horas|hora atual|me diga as horas)\b', lambda m: falar_hora()),
     (r'\b(data|que dia é hoje|me diga a data|qual a data)\b', lambda m: falar_data()),
-    (r'\b(listar|mostrar|quais)\s+(aplicativos|apps)\b', lambda m: listar_aplicativos()),
-    (r'\b(listar|mostrar|quais)\s+(site|sites)\b', lambda m: listar_sites()),
+    (r'\b(listar)\s+(aplicativos|apps)\b', lambda m: listar_aplicativos()),
+    (r'\b(listar)\s+(site|sites)\b', lambda m: listar_sites()),
     (r'pesquisar por(.+)', lambda m: pesquisar_google(m.group(1).strip()))
 ]
 
