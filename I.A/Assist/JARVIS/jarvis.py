@@ -19,9 +19,9 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 idioma = 'pt'
 voz_ativa = True
-COMANDOS_PATH = "sites.json"
-APLICATIVOS_PATH = "aplicativos.json"
-USUARIOS_ADMIN_PATH = "usuarios_admin.json"
+COMANDOS_PATH = "./arq/sites.json"
+APLICATIVOS_PATH = "./arqaplicativos.json"
+USUARIOS_ADMIN_PATH = "./arq/usuarios_admin.json"
 
 # ========== VOZ ==========
 engine = pyttsx3.init()
