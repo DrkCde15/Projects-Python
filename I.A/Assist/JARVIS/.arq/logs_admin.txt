@@ -1,0 +1,6 @@
+[2025-07-04 20:27:34] iron_man: Entrou no modo administrador
+[2025-07-04 20:28:07] iron_man: Listou usuários
+[2025-07-04 20:28:18] iron_man: Saiu do modo admin
+[2025-07-04 20:29:57] iron_man: Entrou no modo administrador
+[2025-07-04 20:30:13] iron_man: Listou usuários
+[2025-07-04 20:30:20] iron_man: Saiu do modo admin
