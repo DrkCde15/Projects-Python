@@ -8,23 +8,25 @@ import re
 import speech_recognition as sr
 import traceback
 import urllib.parse
-import getpass
 from dotenv import load_dotenv
+import getpass
+import hashlib
+import subprocess  # Importa subprocess para abrir nova janela
 
-# ======== CONFIGURAÇÃO ========
+# ========== CONFIG ==========
 load_dotenv()
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-ADMIN_KEY = os.getenv("ADMIN_KEY")
 
 idioma = 'pt'
 voz_ativa = True
 COMANDOS_PATH = "sites.json"
 APLICATIVOS_PATH = "aplicativos.json"
+USUARIOS_ADMIN_PATH = "usuarios_admin.json"
 
+# ========== VOZ ==========
 engine = pyttsx3.init()
 voices = engine.getProperty('voices')
 
-# ======== VOZ ========
 def configurar_voz():
     for voice in voices:
         if idioma == 'pt' and 'brazil' in voice.name.lower():
@@ -38,7 +40,7 @@ def falar(texto):
     engine.say(texto)
     engine.runAndWait()
 
-# ======== JSON ========
+# ========== JSON ==========
 def carregar_json(path):
     if os.path.exists(path):
         with open(path, "r", encoding="utf-8") as f:
@@ -52,7 +54,7 @@ def salvar_json(path, dados):
 comandos_personalizados = carregar_json(COMANDOS_PATH)
 aplicativos = carregar_json(APLICATIVOS_PATH)
 
-# ======== GEMINI ========
+# ========== GEMINI ==========
 def responder_com_gemini(prompt):
     try:
         model = genai.GenerativeModel('gemini-2.5-flash')
@@ -62,7 +64,36 @@ def responder_com_gemini(prompt):
         print(f"Erro Gemini: {e}")
         return "Erro ao acessar o Gemini."
 
-# ======== SITES/APPS/UTIL ========
+# ========== ADMIN USUÁRIOS ==========
+def carregar_usuarios_admin():
+    if os.path.exists(USUARIOS_ADMIN_PATH):
+        with open(USUARIOS_ADMIN_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+def salvar_usuarios_admin(dados):
+    with open(USUARIOS_ADMIN_PATH, "w", encoding="utf-8") as f:
+        json.dump(dados, f, indent=4)
+
+def hash_senha(senha):
+    return hashlib.sha256(senha.encode()).hexdigest()
+
+def cadastrar_usuario_admin():
+    usuarios = carregar_usuarios_admin()
+    nome = input("Novo nome de usuário admin: ").strip().lower()
+    if nome in usuarios:
+        print("Usuário já existe.")
+        return
+    senha = getpass.getpass("Crie uma senha: ").strip()
+    senha2 = getpass.getpass("Confirme a senha: ").strip()
+    if senha != senha2:
+        print("As senhas não coincidem.")
+        return
+    usuarios[nome] = hash_senha(senha)
+    salvar_usuarios_admin(usuarios)
+    print(f"Usuário admin '{nome}' cadastrado com sucesso.")
+
+# ========== COMANDOS ==========
 urls = {
     'youtube': 'https://youtube.com',
     'netflix': 'https://www.netflix.com/browse',
@@ -82,11 +113,9 @@ def abrir_site(site):
             return f"Erro ao abrir {site}: {str(e)}"
     return "Site não reconhecido."
 
-def listar_sites():
-    return "Sites disponíveis: " + ", ".join(sorted(urls.keys())) if urls else "Nenhum site mapeado."
-
 def abrir_aplicativo(nome):
-    nome = nome.lower().strip().split()[0]
+    nome = nome.lower().strip()
+    nome = nome.split()[0]
     if nome in aplicativos:
         try:
             os.system(aplicativos[nome])
@@ -102,14 +131,26 @@ def falar_data():
     return f"Hoje é {datetime.datetime.now().strftime('%d/%m/%Y')}."
 
 def listar_aplicativos():
-    return "Aplicativos disponíveis: " + ", ".join(sorted(aplicativos.keys())) if aplicativos else "Nenhum aplicativo mapeado."
+    if not aplicativos:
+        return "Nenhum aplicativo foi mapeado ainda."
+    nomes = sorted(aplicativos.keys())
+    return "Aplicativos disponíveis: " + ", ".join(nomes)
+
+def listar_sites():
+    if not urls:
+        return "Nenhum site foi mapeado ainda."
+    nomes = sorted(urls.keys())
+    return "Sites disponíveis: " + ", ".join(nomes)
 
 def pesquisar_google(termo):
-    url = f"https://www.google.com/search?q={urllib.parse.quote_plus(termo)}"
+    termo_codificado = urllib.parse.quote_plus(termo)
+    url = f"https://www.google.com/search?q={termo_codificado}"
     webbrowser.open(url)
-    return f"Pesquisando '{termo}' no Google."
+    return f"Pesquisando '{termo}'"
 
-# ======== PADRÕES REGEX ========
+# ========== PADRÕES ==========
+import re
+
 padroes = [
     (r'\b(iniciar|abrir|executar)\s+(youtube|netflix|microsoft teams|github|instagram|whatsapp|tik tok)', lambda m: abrir_site(m.group(2))),
     (r'\b(executar|abrir|iniciar)\s+([a-zA-Z0-9_ ]+)', lambda m: abrir_aplicativo(m.group(2))),
@@ -127,17 +168,34 @@ def processar_regex(comando):
             return acao(match)
     return None
 
-# ======== EXECUÇÃO PRINCIPAL ========
+# ========== EXECUTAR ==========
 def executar_comando(comando):
     comando = comando.lower().strip()
 
     if comando in ['sair', 'exit']:
         return "Encerrando."
 
-    if 'mudar para inglês' in comando:
-        global idioma
-        idioma = 'en'
-        return "Idioma alterado para inglês."
+    if comando == "cadastrar admin":
+        cadastrar_usuario_admin()
+        return "Cadastro de administrador finalizado."
+
+    if comando == "modo administrador":
+        falar("Modo administrador solicitado. Por favor, autentique-se.")
+        usuarios = carregar_usuarios_admin()
+        usuario = input("Usuário: ").strip().lower()
+        senha = getpass.getpass("Senha: ").strip()
+        senha_hash = hash_senha(senha)
+
+        if usuarios.get(usuario) != senha_hash:
+            return "Acesso negado. Usuário ou senha incorretos."
+
+        try:
+            caminho_admin = os.path.abspath("admin_actions.py")
+            proc = subprocess.Popen(['cmd.exe', '/k', 'python', caminho_admin, usuario])
+            proc.wait()  # Espera a janela admin fechar antes de continuar
+            return "Modo administrador encerrado."
+        except Exception as e:
+            return f"Erro ao tentar ativar modo administrador: {e}"
 
     if comando.startswith("cadastrar comando"):
         try:
@@ -162,28 +220,13 @@ def executar_comando(comando):
         except Exception as e:
             return f"Erro ao executar comando: {str(e)}"
 
-    # ===== MODO ADMINISTRADOR =====
-    if comando == "modo administrador":
-        falar("Modo administrador solicitado. Por favor, digite a chave secreta no terminal.")
-        chave = getpass.getpass("Digite a chave secreta: ").strip()
-        if not chave:
-            return "Chave não fornecida. Acesso negado."
-        try:
-            caminho_admin = os.path.abspath("admin_actions.py")
-            os.system(f'start python "{caminho_admin}" {chave}')
-            return "Verificando chave e ativando modo administrador..."
-        except Exception as e:
-            return f"Erro ao tentar ativar modo administrador: {e}"
-
-    # ===== REGEX PADRÕES =====
     resposta_regex = processar_regex(comando)
     if resposta_regex:
         return resposta_regex
 
-    # ===== FALLBACK: Gemini =====
     return responder_com_gemini(comando)
 
-# ======== MODO VOZ ========
+# ========== VOZ ==========
 def ouvir_comando():
     r = sr.Recognizer()
     with sr.Microphone() as source:
@@ -211,12 +254,9 @@ def modo_voz_manual():
             resposta = executar_comando(comando)
             falar(resposta)
 
-# ======== MODO TEXTO ========
+# ========== TEXTO ==========
 def modo_texto_terminal():
     print("Ola Senhor, Sou seu assistente JARVIS. Digite 'x' ou 'exit' para encerrar.\n")
-    mensagens = [
-        "Você é o JARVIS, um assistente profissional que vai diretamente ao ponto, muito inteligente, frio e sempre chama o usuário de Senhor."
-    ]
 
     try:
         while True:
@@ -225,18 +265,17 @@ def modo_texto_terminal():
                 print("Até mais Senhor!")
                 break
 
-            mensagens.append(f"Senhor: {pergunta}")
-            prompt = '\n'.join(mensagens)
             resposta = executar_comando(pergunta)
-            mensagens.append(f"JARVIS: {resposta}")
-            print(f"\nJARVIS: {resposta}\n")
+            if resposta:
+                print(f"\nJARVIS: {resposta}\n")
+
     except KeyboardInterrupt:
         print("\nInterrupção detectada. Até mais Senhor.")
     except Exception:
         print("Erro inesperado:")
         traceback.print_exc()
 
-# ======== MENU INICIAL ========
+# ========== MENU ==========
 if __name__ == "__main__":
     print("\nEscolha a forma de interação:")
     print("1 - Modo por voz (fala um comando por vez)")

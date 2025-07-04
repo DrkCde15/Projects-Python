@@ -1,18 +1,23 @@
 import sys
 import os
 import getpass
-from dotenv import load_dotenv
+from datetime import datetime
 
-load_dotenv()  # Carrega variáveis do .env
+LOG_PATH = "logs_admin.txt"
 
-CHAVE_SECRETA = os.getenv("ADMIN_KEY")
+# Função para registrar ações no log
+def registrar_log(usuario, acao):
+    with open(LOG_PATH, "a", encoding="utf-8") as log:
+        agora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        log.write(f"[{agora}] {usuario}: {acao}\n")
 
-def checar_chave(chave):
-    return chave == CHAVE_SECRETA
-
-def menu():
-    print("""
+def menu(usuario):
+    while True:
+        os.system("cls" if os.name == "nt" else "clear")
+        print(f"""
 === MODO ADMINISTRADOR JARVIS ===
+Usuário autenticado: {usuario}
+
 1 - Listar usuários do sistema
 2 - Criar novo usuário
 3 - Remover usuário
@@ -21,87 +26,59 @@ def menu():
 6 - Executar comando winget (instalar programa)
 7 - Sair
 """)
-
-def listar_usuarios():
-    print("\nUsuários cadastrados no sistema:")
-    os.system("net user")
-    input("\nPressione Enter para continuar...")
-
-def criar_usuario():
-    nome = input("Nome do novo usuário: ").strip()
-    senha = getpass.getpass("Senha para o usuário: ").strip()
-    if not nome or not senha:
-        print("Nome ou senha inválidos.")
-        return
-    comando = f'net user "{nome}" "{senha}" /add'
-    resultado = os.system(comando)
-    if resultado == 0:
-        print(f"Usuário '{nome}' criado com sucesso.")
-    else:
-        print("Falha ao criar usuário.")
-    input("\nPressione Enter para continuar...")
-
-def remover_usuario():
-    nome = input("Nome do usuário a remover: ").strip()
-    if not nome:
-        print("Nome inválido.")
-        return
-    comando = f'net user "{nome}" /delete'
-    resultado = os.system(comando)
-    if resultado == 0:
-        print(f"Usuário '{nome}' removido com sucesso.")
-    else:
-        print("Falha ao remover usuário.")
-    input("\nPressione Enter para continuar...")
-
-def desligar_pc():
-    print("Desligando o computador em 10 segundos... Pressione Ctrl+C para cancelar.")
-    os.system("shutdown /s /t 10")
-
-def reiniciar_pc():
-    print("Reiniciando o computador em 10 segundos... Pressione Ctrl+C para cancelar.")
-    os.system("shutdown /r /t 10")
-
-def instalar_winget():
-    programa = input("Nome do programa para instalar via winget: ").strip()
-    if not programa:
-        print("Programa inválido.")
-        return
-    comando = f'winget install --id={programa} -e --accept-package-agreements --accept-source-agreements'
-    print(f"Executando: {comando}")
-    os.system(comando)
-    input("\nPressione Enter para continuar...")
-
-def main():
-    if len(sys.argv) < 2:
-        print("Chave secreta não fornecida. Encerrando.")
-        return
-
-    chave = sys.argv[1]
-    if not checar_chave(chave):
-        print("Chave incorreta. Acesso negado.")
-        return
-
-    while True:
-        menu()
         escolha = input("Escolha uma opção: ").strip()
+
         if escolha == "1":
-            listar_usuarios()
+            registrar_log(usuario, "Listou usuários")
+            os.system("net user")
         elif escolha == "2":
-            criar_usuario()
+            nome = input("Nome do novo usuário: ").strip()
+            senha = getpass.getpass("Senha para o novo usuário: ").strip()
+            if nome and senha:
+                comando = f'net user "{nome}" "{senha}" /add'
+                resultado = os.system(comando)
+                registrar_log(usuario, f"Tentou criar usuário '{nome}'")
+                print("Usuário criado com sucesso." if resultado == 0 else "Erro ao criar usuário.")
+            else:
+                print("Nome ou senha inválidos.")
         elif escolha == "3":
-            remover_usuario()
+            nome = input("Nome do usuário a remover: ").strip()
+            if nome:
+                comando = f'net user "{nome}" /delete'
+                resultado = os.system(comando)
+                registrar_log(usuario, f"Tentou remover usuário '{nome}'")
+                print("Usuário removido com sucesso." if resultado == 0 else "Erro ao remover usuário.")
         elif escolha == "4":
-            desligar_pc()
+            registrar_log(usuario, "Desligou o PC")
+            print("Desligando o computador em 10 segundos...")
+            os.system("shutdown /s /t 10")
         elif escolha == "5":
-            reiniciar_pc()
+            registrar_log(usuario, "Reiniciou o PC")
+            print("Reiniciando o computador em 10 segundos...")
+            os.system("shutdown /r /t 10")
         elif escolha == "6":
-            instalar_winget()
+            programa = input("Nome do programa para instalar via winget: ").strip()
+            if programa:
+                registrar_log(usuario, f"Instalando programa via winget: {programa}")
+                comando = f'winget install --id={programa} -e --accept-package-agreements --accept-source-agreements'
+                os.system(comando)
         elif escolha == "7":
+            registrar_log(usuario, "Saiu do modo administrador")
             print("Saindo do modo administrador.")
             break
         else:
-            print("Opção inválida. Tente novamente.")
+            print("Opção inválida.")
+
+        input("\nPressione Enter para continuar...")
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usuário autenticado não informado.")
+        return
+
+    usuario = sys.argv[1]
+    registrar_log(usuario, "Entrou no modo administrador")
+    menu(usuario)
 
 if __name__ == "__main__":
     main()
