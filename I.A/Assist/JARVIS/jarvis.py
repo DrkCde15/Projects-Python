@@ -20,7 +20,7 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 idioma = 'pt'
 voz_ativa = True
 COMANDOS_PATH = "./arq/sites.json"
-APLICATIVOS_PATH = "./arqaplicativos.json"
+APLICATIVOS_PATH = "./arq/aplicativos.json"
 USUARIOS_ADMIN_PATH = "./arq/usuarios_admin.json"
 
 # ========== VOZ ==========

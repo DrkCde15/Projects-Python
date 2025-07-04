@@ -4,3 +4,15 @@
 [2025-07-04 20:29:57] iron_man: Entrou no modo administrador
 [2025-07-04 20:30:13] iron_man: Listou usuários
 [2025-07-04 20:30:20] iron_man: Saiu do modo admin
+[2025-07-04 20:37:24] iron_man: Entrou no modo administrador
+[2025-07-04 20:37:42] iron_man: Rodou nmap em 192.168.56.1
+[2025-07-04 20:40:37] iron_man: Saiu do modo admin
+[2025-07-04 20:41:36] iron_man: Entrou no modo administrador
+[2025-07-04 20:42:31] iron_man: Rodou nmap em 192.168.56.1
+[2025-07-04 20:45:21] iron_man: Entrou no modo administrador
+[2025-07-04 20:46:59] iron_man: Listou usuários
+[2025-07-04 20:47:07] iron_man: Saiu do modo admin
+[2025-07-04 20:49:49] iron_man: Entrou no modo administrador
+[2025-07-04 20:49:59] iron_man: Abriu aplicativo: brave
+[2025-07-04 20:50:11] iron_man: Abriu aplicativo: code
+[2025-07-04 20:50:35] iron_man: Saiu do modo admin
