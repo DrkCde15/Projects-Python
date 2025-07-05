@@ -1,30 +1,22 @@
-import google.generativeai as genai # biblioteca para acessar a API do Gemini
+# J.A.R.V.I.S = Just A Rather Very Intelligent System
 
-import pyttsx3 # biblioteca para o usuário falar
-
-import webbrowser # biblioteca para abrir sites no navegador
-
-import os # biblioteca para manipular arquivos e diretórios do sistema
-
-import json # biblioteca para manipular arquivos json 
-
-import datetime # biblioteca para manipular datas e horas
-
-import re # biblioteca para manipular expressões regulares
-
-import speech_recognition as sr # biblioteca para reconhecer voz do usuário
-
-import traceback # biblioteca para tratar erros e imprimir traceback
-
-import urllib.parse # biblioteca para codificar URLs e decodificar URLs
-
-from dotenv import load_dotenv # biblioteca para carregar variáveis de ambiente do arquivo .env
-
-import getpass # biblioteca para solicitar senha
-
-import hashlib # biblioteca para criptografia
-
-import subprocess  # biblioteca para executar comandos do sistema operacional
+import google.generativeai as genai
+import pyttsx3
+import webbrowser
+import os
+import json
+import datetime
+import re
+import speech_recognition as sr
+import traceback
+import urllib.parse
+from dotenv import load_dotenv
+import getpass
+import hashlib
+import subprocess
+from pathlib import Path
+import fitz
+from docx import Document
 
 # ========== CONFIG ==========
 load_dotenv()
@@ -72,10 +64,12 @@ def responder_com_gemini(prompt):
     try:
         model = genai.GenerativeModel('gemini-2.5-flash')
         resposta = model.generate_content(prompt)
-        return resposta.text.strip()
+        texto = resposta.text.strip()
+        print(f"JARVIS: {texto}")
+        falar(texto)
+        return texto
     except Exception as e:
-        print(f"Erro Gemini: {e}")
-        return "Erro ao acessar o Gemini."
+        return f"Erro Gemini: {e}"
 
 # ========== ADMIN USUÁRIOS ==========
 def carregar_usuarios_admin():
@@ -127,8 +121,7 @@ def abrir_site(site):
     return "Site não reconhecido."
 
 def abrir_aplicativo(nome):
-    nome = nome.lower().strip()
-    nome = nome.split()[0]
+    nome = nome.lower().strip().split()[0]
     if nome in aplicativos:
         try:
             os.system(aplicativos[nome])
@@ -136,6 +129,22 @@ def abrir_aplicativo(nome):
         except Exception as e:
             return f"Erro ao abrir {nome}: {str(e)}"
     return f"Aplicativo '{nome}' não está mapeado."
+
+def abrir_pasta(nome):
+    home = Path.home()
+    pastas = {
+        "documento": home / "Documents",
+        "imagem": home / "Pictures",
+        "download": home / "Downloads",
+        "projeto": home / "Documents" / "Projects",
+        "aniversario": home / "Documents" / "aniversarios",
+        "codigos": home / "Documents" / "Codes-master"
+    }
+    caminho = pastas.get(nome.lower())
+    if caminho and caminho.exists():
+        os.startfile(str(caminho))
+        return f"Abrindo pasta {nome}."
+    return "Pasta não encontrada."
 
 def falar_hora():
     return f"Agora são {datetime.datetime.now().strftime('%H:%M')}."
@@ -146,14 +155,12 @@ def falar_data():
 def listar_aplicativos():
     if not aplicativos:
         return "Nenhum aplicativo foi mapeado ainda."
-    nomes = sorted(aplicativos.keys())
-    return "Aplicativos disponíveis: " + ", ".join(nomes)
+    return "Aplicativos disponíveis: " + ", ".join(sorted(aplicativos.keys()))
 
 def listar_sites():
     if not urls:
         return "Nenhum site foi mapeado ainda."
-    nomes = sorted(urls.keys())
-    return "Sites disponíveis: " + ", ".join(nomes)
+    return "Sites disponíveis: " + ", ".join(sorted(urls.keys()))
 
 def pesquisar_google(termo):
     termo_codificado = urllib.parse.quote_plus(termo)
@@ -161,12 +168,46 @@ def pesquisar_google(termo):
     webbrowser.open(url)
     return f"Pesquisando '{termo}'"
 
-# ========== PADRÕES ==========
-import re
+def ler_docx(caminho):
+    try:
+        doc = Document(caminho)
+        texto = '\n'.join([p.text for p in doc.paragraphs])
+        return texto
+    except Exception as e:
+        return f"Erro ao ler .docx: {e}"
 
+def ler_pdf(caminho):
+    try:
+        doc = fitz.open(caminho)
+        texto = ''
+        for pagina in doc:
+            texto += pagina.get_text()
+        return texto
+    except Exception as e:
+        return f"Erro ao ler PDF: {e}"
+
+# ==== FUNÇÃO NOVA: USO DE rglob() ====
+
+def buscar_arquivos_recursivo(pasta, padrao='*'):
+    p = Path(pasta)
+    arquivos = list(p.rglob(padrao))
+    return arquivos
+
+def listar_arquivos_extensao(pasta, extensao):
+    padrao = f'*.{extensao.lstrip(".")}'
+    arquivos = buscar_arquivos_recursivo(pasta, padrao)
+    if not arquivos:
+        return f"Nenhum arquivo com extensão {extensao} encontrado em {pasta}."
+    arquivos_str = "\n".join(str(a) for a in arquivos[:20])
+    total = len(arquivos)
+    mais = f"\n...e mais {total - 20} arquivos." if total > 20 else ""
+    return f"Arquivos encontrados ({total}):\n{arquivos_str}{mais}"
+
+# ==== PADRÕES DE COMANDO ====
 padroes = [
     (r'\b(iniciar|abrir|executar)\s+(youtube|netflix|microsoft teams|github|instagram|whatsapp|tik tok)', lambda m: abrir_site(m.group(2))),
     (r'\b(executar|abrir|iniciar)\s+([a-zA-Z0-9_ ]+)', lambda m: abrir_aplicativo(m.group(2))),
+    (r'\b(pasta|abrir pasta)\s+(\w+)', lambda m: abrir_pasta(m.group(2))),
     (r'\b(que horas|horas|hora atual|me diga as horas)\b', lambda m: falar_hora()),
     (r'\b(data|que dia é hoje|me diga a data|qual a data)\b', lambda m: falar_data()),
     (r'\b(listar)\s+(aplicativos|apps)\b', lambda m: listar_aplicativos()),
@@ -181,7 +222,6 @@ def processar_regex(comando):
             return acao(match)
     return None
 
-# ========== EXECUTAR ==========
 def executar_comando(comando):
     comando = comando.lower().strip()
 
@@ -205,7 +245,7 @@ def executar_comando(comando):
         try:
             caminho_admin = os.path.abspath("admin_actions.py")
             proc = subprocess.Popen(['cmd.exe', '/k', 'python', caminho_admin, usuario])
-            proc.wait()  # Espera a janela admin fechar antes de continuar
+            proc.wait()
             return "Modo administrador encerrado."
         except Exception as e:
             return f"Erro ao tentar ativar modo administrador: {e}"
@@ -233,13 +273,36 @@ def executar_comando(comando):
         except Exception as e:
             return f"Erro ao executar comando: {str(e)}"
 
+    # === NOVO COMANDO USANDO R.GLOB ===
+    if comando.startswith("listar arquivos"):
+        # Exemplo esperado:
+        # "listar arquivos em documentos com extensão pdf"
+        partes = comando.split()
+        try:
+            idx_em = partes.index('em')
+            idx_com = partes.index('com')
+            pasta = partes[idx_em + 1]
+            extensao = partes[idx_com + 2]
+            home = Path.home()
+            pastas_map = {
+                "documentos": home / "Documents",
+                "imagens": home / "Pictures",
+                "downloads": home / "Downloads",
+                "projetos": home / "Documents" / "Projects",
+                "aniversario": home / "Documents" / "aniversarios",
+                "codigos": home / "Documents" / "Codes-master"
+            }
+            caminho = pastas_map.get(pasta, pasta)
+            return listar_arquivos_extensao(caminho, extensao)
+        except Exception:
+            return "Formato inválido. Use: listar arquivos em [pasta] com extensão [extensão]"
+
     resposta_regex = processar_regex(comando)
     if resposta_regex:
         return resposta_regex
 
     return responder_com_gemini(comando)
 
-# ========== VOZ ==========
 def ouvir_comando():
     r = sr.Recognizer()
     with sr.Microphone() as source:
@@ -264,10 +327,8 @@ def modo_voz_manual():
             if comando in ['sair', 'exit']:
                 falar("Até mais Senhor.")
                 break
-            resposta = executar_comando(comando)
-            falar(resposta)
+            executar_comando(comando)
 
-# ========== TEXTO ==========
 def modo_texto_terminal():
     print("Ola Senhor, Sou seu assistente JARVIS. Digite 'x' ou 'exit' para encerrar.\n")
 
@@ -288,7 +349,6 @@ def modo_texto_terminal():
         print("Erro inesperado:")
         traceback.print_exc()
 
-# ========== MENU ==========
 if __name__ == "__main__":
     print("\nEscolha a forma de interação:")
     print("1 - Modo por voz (fala um comando por vez)")
