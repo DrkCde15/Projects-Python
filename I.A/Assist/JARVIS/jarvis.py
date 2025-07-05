@@ -24,9 +24,9 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 idioma = 'pt'
 voz_ativa = True
-COMANDOS_PATH = "./arq/sites.json"
-APLICATIVOS_PATH = "./arq/aplicativos.json"
-USUARIOS_ADMIN_PATH = "./arq/usuarios_admin.json"
+COMANDOS_PATH = "./arquivos/sites.json"
+APLICATIVOS_PATH = "./arquivos/aplicativos.json"
+USUARIOS_ADMIN_PATH = "./arquivos/usuarios_admin.json"
 
 # ========== VOZ ==========
 engine = pyttsx3.init()
@@ -108,7 +108,8 @@ urls = {
     'github': 'https://github.com/DrkCde15',
     'instagram': 'https://www.instagram.com/jc_v05/',
     'whatsapp': 'https://web.whatsapp.com/',
-    'tik tok': 'https://www.tiktok.com/@bx_329'
+    'tik tok': 'https://www.tiktok.com/@bx_329',
+    'e-mail': 'https://mail.google.com/mail/u/1/#inbox'
 }
 
 def abrir_site(site):
@@ -133,8 +134,6 @@ def abrir_aplicativo(nome):
 def abrir_pasta(nome):
     home = Path.home()
     nome = nome.lower()
-
-    # === Mapeamento flexível ===
     sinonimos = {
         "documentos": ["documento", "documentos", "meus documentos"],
         "imagens": ["imagem", "imagens", "minhas imagens", "fotos"],
@@ -146,7 +145,6 @@ def abrir_pasta(nome):
         "videos": ["video", "videos", "filmes"],
         "musica": ["musica", "músicas", "audios", "sons"]
     }
-
     caminhos = {
         "documentos": home / "Documents",
         "imagens": home / "Pictures",
@@ -158,7 +156,6 @@ def abrir_pasta(nome):
         "videos": home / "Videos",
         "musica": home / "Music"
     }
-    # Normaliza sinônimo para chave
     pasta_key = None
     for chave, lista in sinonimos.items():
         if nome in lista:
@@ -174,6 +171,7 @@ def abrir_pasta(nome):
         return f"Abrindo pasta {pasta_key}."
     except Exception as e:
         return f"Erro ao tentar abrir a pasta '{pasta_key}': {e}"
+
 def falar_hora():
     return f"Agora são {datetime.datetime.now().strftime('%H:%M')}."
 
@@ -214,8 +212,6 @@ def ler_pdf(caminho):
     except Exception as e:
         return f"Erro ao ler PDF: {e}"
 
-# ==== FUNÇÃO NOVA: USO DE rglob() ====
-
 def buscar_arquivos_recursivo(pasta, padrao='*'):
     p = Path(pasta)
     arquivos = list(p.rglob(padrao))
@@ -231,16 +227,16 @@ def listar_arquivos_extensao(pasta, extensao):
     mais = f"\n...e mais {total - 20} arquivos." if total > 20 else ""
     return f"Arquivos encontrados ({total}):\n{arquivos_str}{mais}"
 
-# ==== PADRÕES DE COMANDO ====
+# ========== PADRÕES ==========
 padroes = [
-    (r'\b(iniciar|abrir|executar)\s+(youtube|netflix|microsoft teams|github|instagram|whatsapp|tik tok)', lambda m: abrir_site(m.group(2))),
+    (r'\b(iniciar|abrir|executar)\s+(youtube|netflix|microsoft teams|github|instagram|whatsapp|tik tok|e-mail)', lambda m: abrir_site(m.group(2))),
     (r'\b(executar|abrir|iniciar)\s+([a-zA-Z0-9_ ]+)', lambda m: abrir_aplicativo(m.group(2))),
-    (r'\b(?:abrir|acessar|mostrar|ver|exibir|quero abrir|abre|abrir a|abrir os|abrir as|mostrar os|mostrar as|acessar os|acessar as)\s+(?:a|o|os|as|meu|meus|minha|minhas)?\s*([\w\s]+)', lambda m: abrir_pasta(m.group(1).strip())),
-    (r'\b(que horas|horas|hora atual|me diga as horas)\b', lambda m: falar_hora()),
-    (r'\b(data|que dia é hoje|me diga a data|qual a data)\b', lambda m: falar_data()),
-    (r'\b(listar)\s+(aplicativos|apps)\b', lambda m: listar_aplicativos()),
-    (r'\b(listar)\s+(site|sites)\b', lambda m: listar_sites()),
-    (r'pesquisar por(.+)', lambda m: pesquisar_google(m.group(1).strip()))
+    (r'\b(abrir|acessar|mostrar|ver|exibir|quero abrir|abre|abrir a|abrir os|abrir as|mostrar os|mostrar as|acessar os|acessar as)\s+(a|o|os|as|meu|meus|minha|minhas)?\s*([\w\s]+)', lambda m: abrir_pasta(m.group(3).strip())),
+    (r'\b(que horas( são)?|horas|hora atual|me diga as horas|qual é a hora)\b', lambda m: falar_hora()),
+    (r'\b(data|que dia é hoje|me diga a data|qual a data|qual é a data)\b', lambda m: falar_data()),
+    (r'\b(listar|quais são os|me diga os|mostrar)\s+(aplicativo|apps)\b', lambda m: listar_aplicativos()),
+    (r'\b(listar|quais são os|me diga os|mostrar)\s+(site|endereços|links)\b', lambda m: listar_sites()),
+    (r'pesquisar por\s+(.+)', lambda m: pesquisar_google(m.group(1).strip()))
 ]
 
 def processar_regex(comando):
@@ -252,6 +248,7 @@ def processar_regex(comando):
 
 def executar_comando(comando):
     comando = comando.lower().strip()
+    print(f"[DEBUG] Comando reconhecido: '{comando}'")
 
     if comando in ['sair', 'exit']:
         return "Encerrando."
@@ -266,10 +263,8 @@ def executar_comando(comando):
         usuario = input("Usuário: ").strip().lower()
         senha = getpass.getpass("Senha: ").strip()
         senha_hash = hash_senha(senha)
-
         if usuarios.get(usuario) != senha_hash:
             return "Acesso negado. Usuário ou senha incorretos."
-
         try:
             caminho_admin = os.path.abspath("admin_actions.py")
             proc = subprocess.Popen(['cmd.exe', '/k', 'python', caminho_admin, usuario])
@@ -301,17 +296,13 @@ def executar_comando(comando):
         except Exception as e:
             return f"Erro ao executar comando: {str(e)}"
 
-    # === NOVO COMANDO USANDO R.GLOB ===
     if comando.startswith("listar arquivos"):
         try:
-            # Normaliza variações como "com a extensao", "com extensão", etc.
             match = re.search(r"listar arquivos em (\w+)\s+com\s+(?:a\s+)?extens[aã]o\s+(\w+)", comando)
             if not match:
                 return "Formato inválido. Use: listar arquivos em [pasta] com a extensão [extensão]"
-
             pasta = match.group(1)
             extensao = match.group(2)
-
             home = Path.home()
             pastas_map = {
                 "documento": home / "Documents",
@@ -329,7 +320,6 @@ def executar_comando(comando):
                 "desktop": home / "Desktop",
                 "area de trabalho": home / "Desktop"
             }
-
             caminho = pastas_map.get(pasta, pasta)
             return listar_arquivos_extensao(caminho, extensao)
         except Exception:
@@ -347,7 +337,7 @@ def ouvir_comando():
         r.adjust_for_ambient_noise(source)
         print("Escutando...")
         try:
-            audio = r.listen(source, timeout=5, phrase_time_limit=10)
+            audio = r.listen(source, timeout=5, phrase_time_limit=15)
         except sr.WaitTimeoutError:
             return ""
     try:
@@ -365,22 +355,21 @@ def modo_voz_manual():
             if comando in ['sair', 'exit']:
                 falar("Até mais Senhor.")
                 break
-            executar_comando(comando)
+            resposta = executar_comando(comando)
+            if resposta:
+                falar(resposta)
 
 def modo_texto_terminal():
     print("Ola Senhor, Sou seu assistente JARVIS. Digite 'x' ou 'exit' para encerrar.\n")
-
     try:
         while True:
             pergunta = input("Usuário: ").strip()
             if pergunta.lower() in ['x', 'exit']:
                 print("Até mais Senhor!")
                 break
-
             resposta = executar_comando(pergunta)
             if resposta:
                 print(f"\nJARVIS: {resposta}\n")
-
     except KeyboardInterrupt:
         print("\nInterrupção detectada. Até mais Senhor.")
     except Exception:
