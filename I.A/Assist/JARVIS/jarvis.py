@@ -62,7 +62,7 @@ aplicativos = carregar_json(APLICATIVOS_PATH)
 # ========== GEMINI ==========
 def responder_com_gemini(prompt):
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel('gemini-1.5-flash')
         resposta = model.generate_content(prompt)
         texto = resposta.text.strip()
         print(f"JARVIS: {texto}")
@@ -132,20 +132,48 @@ def abrir_aplicativo(nome):
 
 def abrir_pasta(nome):
     home = Path.home()
-    pastas = {
-        "documento": home / "Documents",
-        "imagem": home / "Pictures",
-        "download": home / "Downloads",
-        "projeto": home / "Documents" / "Projects",
-        "aniversario": home / "Documents" / "aniversarios",
-        "codigos": home / "Documents" / "Codes-master"
-    }
-    caminho = pastas.get(nome.lower())
-    if caminho and caminho.exists():
-        os.startfile(str(caminho))
-        return f"Abrindo pasta {nome}."
-    return "Pasta não encontrada."
+    nome = nome.lower()
 
+    # === Mapeamento flexível ===
+    sinonimos = {
+        "documentos": ["documento", "documentos", "meus documentos"],
+        "imagens": ["imagem", "imagens", "minhas imagens", "fotos"],
+        "downloads": ["download", "downloads", "baixados", "transferências"],
+        "projetos": ["projeto", "projetos", "meus projetos"],
+        "aniversarios": ["aniversario", "aniversarios"],
+        "codigos": ["codigo", "codigos", "meus codigos", "scripts", "projetos de código"],
+        "desktop": ["desktop", "área de trabalho", "tela inicial"],
+        "videos": ["video", "videos", "filmes"],
+        "musica": ["musica", "músicas", "audios", "sons"]
+    }
+
+    caminhos = {
+        "documentos": home / "Documents",
+        "imagens": home / "Pictures",
+        "downloads": home / "Downloads",
+        "projetos": home / "Documents" / "Projects",
+        "aniversarios": home / "Documents" / "aniversarios",
+        "codigos": home / "Documents" / "Codes-master",
+        "desktop": home / "Desktop",
+        "videos": home / "Videos",
+        "musica": home / "Music"
+    }
+    # Normaliza sinônimo para chave
+    pasta_key = None
+    for chave, lista in sinonimos.items():
+        if nome in lista:
+            pasta_key = chave
+            break
+    if not pasta_key:
+        return f"Pasta '{nome}' não reconhecida."
+    caminho = caminhos.get(pasta_key)
+    if not caminho.exists():
+        return f"Pasta '{pasta_key}' mapeada, mas o caminho '{caminho}' não existe."
+    try:
+        subprocess.Popen(f'explorer "{caminho}"', shell=True)
+        return f"Abrindo pasta {pasta_key}."
+    except Exception as e:
+        return f"Erro ao tentar abrir a pasta '{pasta_key}': {e}"
 def falar_hora():
     return f"Agora são {datetime.datetime.now().strftime('%H:%M')}."
 
@@ -207,7 +235,7 @@ def listar_arquivos_extensao(pasta, extensao):
 padroes = [
     (r'\b(iniciar|abrir|executar)\s+(youtube|netflix|microsoft teams|github|instagram|whatsapp|tik tok)', lambda m: abrir_site(m.group(2))),
     (r'\b(executar|abrir|iniciar)\s+([a-zA-Z0-9_ ]+)', lambda m: abrir_aplicativo(m.group(2))),
-    (r'\b(pasta|abrir pasta)\s+(\w+)', lambda m: abrir_pasta(m.group(2))),
+    (r'\b(?:abrir|acessar|mostrar|ver|exibir|quero abrir|abre|abrir a|abrir os|abrir as|mostrar os|mostrar as|acessar os|acessar as)\s+(?:a|o|os|as|meu|meus|minha|minhas)?\s*([\w\s]+)', lambda m: abrir_pasta(m.group(1).strip())),
     (r'\b(que horas|horas|hora atual|me diga as horas)\b', lambda m: falar_hora()),
     (r'\b(data|que dia é hoje|me diga a data|qual a data)\b', lambda m: falar_data()),
     (r'\b(listar)\s+(aplicativos|apps)\b', lambda m: listar_aplicativos()),
@@ -286,13 +314,22 @@ def executar_comando(comando):
 
             home = Path.home()
             pastas_map = {
+                "documento": home / "Documents",
                 "documentos": home / "Documents",
+                "imagem": home / "Pictures",
                 "imagens": home / "Pictures",
                 "download": home / "Downloads",
+                "downloads": home / "Downloads",
+                "projeto": home / "Documents" / "Projects",
                 "projetos": home / "Documents" / "Projects",
                 "aniversario": home / "Documents" / "aniversarios",
-                "codigos": home / "Documents" / "Codes-master"
+                "aniversarios": home / "Documents" / "aniversarios",
+                "codigo": home / "Documents" / "Codes-master",
+                "codigos": home / "Documents" / "Codes-master",
+                "desktop": home / "Desktop",
+                "area de trabalho": home / "Desktop"
             }
+
             caminho = pastas_map.get(pasta, pasta)
             return listar_arquivos_extensao(caminho, extensao)
         except Exception:
