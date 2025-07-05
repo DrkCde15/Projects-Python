@@ -1,17 +1,30 @@
-import google.generativeai as genai
-import pyttsx3
-import webbrowser
-import os
-import json
-import datetime
-import re
-import speech_recognition as sr
-import traceback
-import urllib.parse
-from dotenv import load_dotenv
-import getpass
-import hashlib
-import subprocess  # Importa subprocess para abrir nova janela
+import google.generativeai as genai # biblioteca para acessar a API do Gemini
+
+import pyttsx3 # biblioteca para o usuário falar
+
+import webbrowser # biblioteca para abrir sites no navegador
+
+import os # biblioteca para manipular arquivos e diretórios do sistema
+
+import json # biblioteca para manipular arquivos json 
+
+import datetime # biblioteca para manipular datas e horas
+
+import re # biblioteca para manipular expressões regulares
+
+import speech_recognition as sr # biblioteca para reconhecer voz do usuário
+
+import traceback # biblioteca para tratar erros e imprimir traceback
+
+import urllib.parse # biblioteca para codificar URLs e decodificar URLs
+
+from dotenv import load_dotenv # biblioteca para carregar variáveis de ambiente do arquivo .env
+
+import getpass # biblioteca para solicitar senha
+
+import hashlib # biblioteca para criptografia
+
+import subprocess  # biblioteca para executar comandos do sistema operacional
 
 # ========== CONFIG ==========
 load_dotenv()
