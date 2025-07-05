@@ -17,6 +17,8 @@ import subprocess
 from pathlib import Path
 import fitz
 from docx import Document
+import pandas as pd
+from pptx import Presentation
 
 # ========== CONFIG ==========
 load_dotenv()
@@ -213,6 +215,35 @@ def ler_pdf(caminho):
     except Exception as e:
         return f"Erro ao ler PDF: {e}"
 
+def ler_pdf(caminho):
+    try:
+        doc = fitz.open(caminho)
+        texto = ''
+        for pagina in doc:
+            texto += pagina.get_text()
+        return texto
+    except Exception as e:
+        return f"Erro ao ler PDF: {e}"
+
+def ler_excel(caminho):
+    try:
+        df = pd.read_excel(caminho)
+        return df.to_string(index=False)
+    except Exception as e:
+        return f"Erro ao ler Excel: {e}"
+
+def ler_pptx(caminho):
+    try:
+        prs = Presentation(caminho)
+        texto = ''
+        for slide in prs.slides:
+            for shape in slide.shapes:
+                if hasattr(shape, "text"):
+                    texto += shape.text + "\n"
+        return texto
+    except Exception as e:
+        return f"Erro ao ler PPTX: {e}"
+
 def buscar_arquivos_recursivo(pasta, padrao='*'):
     p = Path(pasta)
     arquivos = list(p.rglob(padrao))
@@ -228,11 +259,35 @@ def listar_arquivos_extensao(pasta, extensao):
     mais = f"\n...e mais {total - 20} arquivos." if total > 20 else ""
     return f"Arquivos encontrados ({total}):\n{arquivos_str}{mais}"
 
+def analisar_arquivos(comando):
+    if comando.startswith("analisar arquivo"):
+        try:
+            caminho = comando.replace("analisar arquivo", "").strip('" ').strip()
+            if not os.path.exists(caminho):
+                return "Arquivo não encontrado."
+            if caminho.endswith(".pdf"):
+                conteudo = ler_pdf(caminho)
+            elif caminho.endswith(".docx"):
+                conteudo = ler_docx(caminho)
+            elif caminho.endswith(".pptx"):
+                conteudo = ler_pptx(caminho)
+            elif caminho.endswith(".xlsx") or caminho.endswith(".xls"):
+                conteudo = ler_excel(caminho)
+            else:
+                return "Formato ainda não suportado para análise."
+
+            prompt = f"Analise esse conteúdo extraído do arquivo:\n\n{conteudo}"
+            return responder_com_gemini(prompt)
+        except Exception as e:
+            return f"Erro ao analisar arquivo: {e}"
+    return None
+
 # ========== PADRÕES ==========
 padroes = [
     (r'\b(iniciar|abrir|executar)\s+(youtube|netflix|microsoft teams|github|instagram|whatsapp|tik tok|e-mail)', lambda m: abrir_site(m.group(2))),
     (r'\b(executar|abrir|iniciar)\s+([a-zA-Z0-9_ ]+)', lambda m: abrir_aplicativo(m.group(2))),
     (r'\b(abrir|acessar|mostrar|ver|exibir|quero abrir|abre|abrir a|abrir os|abrir as|mostrar os|mostrar as|acessar os|acessar as)\s+(a|o|os|as|meu|meus|minha|minhas)?\s*([\w\s]+)', lambda m: abrir_pasta(m.group(3).strip())),
+    (r'\b(analisar|interpretar|ler|estudar)\s+arquivo\s+(.+)', lambda m: analisar_arquivos(f'analisar arquivo {m.group(2).strip()}')),
     (r'\b(que horas( são)?|horas|hora atual|me diga as horas|qual é a hora)\b', lambda m: falar_hora()),
     (r'\b(data|que dia é hoje|me diga a data|qual a data|qual é a data)\b', lambda m: falar_data()),
     (r'\b(listar|quais são os|me diga os|mostrar)\s+(aplicativo|apps)\b', lambda m: listar_aplicativos()),
@@ -390,13 +445,60 @@ def modo_texto_terminal():
     except Exception:
         print("Erro inesperado:")
         traceback.print_exc()
-
+        
+# Adicione esta função no final do seu script, **antes** do `if __name__ == "__main__":`
+def mostrar_manual():
+    print("\n========== MANUAL DE USO - J.A.R.V.I.S ==========\n")
+    print("JARVIS (Just A Rather Very Intelligent System) é seu assistente pessoal automatizado.")
+    print("Use comandos de texto ou voz para interagir com o sistema.")
+    print("\n MODO TEXTO:")
+    print("- Você digita os comandos diretamente no terminal.")
+    print("- Exemplos:")
+    print("  → abrir navegador")
+    print("  → listar aplicativos")
+    print("  → abrir pasta downloads")
+    print("  → listar arquivos em documentos com extensão pdf/docx/pptx/xlsx/xls")
+    print("  → analisar documentos em pdf/docx/pptx/xlsx/xls")
+    print("  → rodar scanner de IP (modo admin)")
+    print("  → desligar o sistema")
+    
+    print("\n MODO VOZ:")
+    print("- O JARVIS escuta e interpreta sua fala.")
+    print("- Fale um comando por vez com clareza.")
+    print("- Exemplos:")
+    print("  → abrir navegador")
+    print("  → listar aplicativos")
+    print("  → abrir pasta downloads")
+    
+    print("\n MODO ADMIN (restrito):")
+    print("- Ativado por usario e senha admin cadastrados.")
+    print("- Permite:")
+    print("  → Criar usuários (net user)")
+    print("  → Alterar registros do sistema")
+    print("  → Executar comandos críticos como shutdown, nmap, reg add, winget")
+    
+    print("\n COMANDOS DISPONÍVEIS:")
+    print("- abrir navegador / email / whatsapp / youtube")
+    print("- abrir pasta [nome]")
+    print("- listar sites / aplicativos")
+    print("- checar atualizações do Windows")
+    print("- abrir aplicativo pelo nome")
+    print("- analisar arquivos PDF, DOCX, PPTX e planilhas Excel")
+    
+    print("\n DICAS:")
+    print("- Fale de forma objetiva no modo de voz.")
+    print("- Evite ruídos ou interrupções no microfone.")
+    print("- Comandos complexos exigem o modo admin ativado.")
+    
+    print("\n=================================================\n")
+    
 if __name__ == "__main__":
     print("\nEscolha a forma de interação:")
     print("1 - Modo por voz (fala um comando por vez)")
     print("2 - Modo texto (JARVIS)")
+    print("3 - Ver manual de uso do JARVIS")
 
-    escolha = input("Digite 1 ou 2: ").strip()
+    escolha = input("Digite 1, 2 ou 3: ").strip()
 
     if escolha == '1':
         voz_ativa = True
@@ -404,5 +506,7 @@ if __name__ == "__main__":
     elif escolha == '2':
         voz_ativa = False
         modo_texto_terminal()
+    elif escolha == '3':
+        mostrar_manual()
     else:
         print("Opção inválida.")
