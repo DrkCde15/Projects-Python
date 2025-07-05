@@ -16,3 +16,7 @@
 [2025-07-04 20:49:59] iron_man: Abriu aplicativo: brave
 [2025-07-04 20:50:11] iron_man: Abriu aplicativo: code
 [2025-07-04 20:50:35] iron_man: Saiu do modo admin
+[2025-07-05 12:06:39] iron_man: Entrou no modo administrador
+[2025-07-05 12:06:50] iron_man: Abriu aplicativo: notepad
+[2025-07-05 12:07:03] iron_man: Abriu aplicativo: chrome
+[2025-07-05 12:07:21] iron_man: Saiu do modo admin

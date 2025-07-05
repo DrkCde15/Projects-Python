@@ -275,19 +275,20 @@ def executar_comando(comando):
 
     # === NOVO COMANDO USANDO R.GLOB ===
     if comando.startswith("listar arquivos"):
-        # Exemplo esperado:
-        # "listar arquivos em documentos com extensão pdf"
-        partes = comando.split()
         try:
-            idx_em = partes.index('em')
-            idx_com = partes.index('com')
-            pasta = partes[idx_em + 1]
-            extensao = partes[idx_com + 2]
+            # Normaliza variações como "com a extensao", "com extensão", etc.
+            match = re.search(r"listar arquivos em (\w+)\s+com\s+(?:a\s+)?extens[aã]o\s+(\w+)", comando)
+            if not match:
+                return "Formato inválido. Use: listar arquivos em [pasta] com a extensão [extensão]"
+
+            pasta = match.group(1)
+            extensao = match.group(2)
+
             home = Path.home()
             pastas_map = {
                 "documentos": home / "Documents",
                 "imagens": home / "Pictures",
-                "downloads": home / "Downloads",
+                "download": home / "Downloads",
                 "projetos": home / "Documents" / "Projects",
                 "aniversario": home / "Documents" / "aniversarios",
                 "codigos": home / "Documents" / "Codes-master"
@@ -295,7 +296,7 @@ def executar_comando(comando):
             caminho = pastas_map.get(pasta, pasta)
             return listar_arquivos_extensao(caminho, extensao)
         except Exception:
-            return "Formato inválido. Use: listar arquivos em [pasta] com extensão [extensão]"
+            return "Erro ao tentar listar arquivos."
 
     resposta_regex = processar_regex(comando)
     if resposta_regex:
