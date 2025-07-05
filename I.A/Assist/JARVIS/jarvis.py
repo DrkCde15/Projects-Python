@@ -31,6 +31,7 @@ USUARIOS_ADMIN_PATH = "./arquivos/usuarios_admin.json"
 # ========== VOZ ==========
 engine = pyttsx3.init()
 voices = engine.getProperty('voices')
+engine.setProperty('rate', 250)
 
 def configurar_voz():
     for voice in voices:
@@ -248,7 +249,21 @@ def processar_regex(comando):
 
 def executar_comando(comando):
     comando = comando.lower().strip()
-    print(f"[DEBUG] Comando reconhecido: '{comando}'")
+
+    if comando in ['abrir e-mail', 'abrir email', 'acessar e-mail']:
+        try:
+            tipo_msg = input("Que tipo de mensagem você deseja enviar? (ex: profissional para o chefe, agradecimento, etc): ").strip()
+            if not tipo_msg:
+                return "Tipo de mensagem não especificado."
+            prompt = f"Crie uma mensagem de e-mail em português no estilo: {tipo_msg}."
+            mensagem = responder_com_gemini(prompt)
+            print("\nModelo sugerido:\n")
+            print(mensagem)
+            falar("Mensagem gerada. Abrindo Gmail.")
+            webbrowser.open(urls['e-mail'])
+            return "Email aberto no navegador."
+        except Exception as e:
+            return f"Erro ao processar mensagem de e-mail: {str(e)}"
 
     if comando in ['sair', 'exit']:
         return "Encerrando."
